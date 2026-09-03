@@ -44,6 +44,10 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+    Core/Src/mt6816.c
+    Core/Src/my_cordic.c
+    Core/Src/ws2812b.c
+    Core/Src/foc.c
     # Add user sources here
 )
 
