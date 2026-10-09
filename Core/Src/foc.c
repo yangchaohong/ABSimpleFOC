@@ -86,6 +86,8 @@ float PID_Compute(struct PID_Controller *pid, float error) {
   return output;
 }
 
+extern TorqueControlType torque_type;
+
 void FOC_Run(struct FOC_Motor *motor, struct PID_Controller *pid_id,
              struct PID_Controller *pid_iq) {
   Clarke_Transform(motor->Ia, motor->Ib, motor->Ic, &motor->I_alpha,
@@ -94,10 +96,17 @@ void FOC_Run(struct FOC_Motor *motor, struct PID_Controller *pid_id,
   Park_Transform(motor->I_alpha, motor->I_beta, motor->elec_angle, &motor->Id,
                  &motor->Iq);
 
-  float error_Id = motor->target_Id - motor->Id;
-  float error_Iq = motor->target_Iq - motor->Iq;
-  motor->Vd = PID_Compute(pid_id, error_Id);
-  motor->Vq = PID_Compute(pid_iq, error_Iq);
+  if (torque_type == TORQUE_VOLTAGE) {
+    // 电压模式 (开环力矩)：直接将目标设为相电压，跳过电流环 PI，防止积分饱和打满
+    motor->Vd = motor->target_Id;
+    motor->Vq = motor->target_Iq;
+  } else {
+    // 矢量电流闭环模式
+    float error_Id = motor->target_Id - motor->Id;
+    float error_Iq = motor->target_Iq - motor->Iq;
+    motor->Vd = PID_Compute(pid_id, error_Id);
+    motor->Vq = PID_Compute(pid_iq, error_Iq);
+  }
 
   motor->Vd = fmaxf(fminf(motor->Vd, MAX_V_BUS_LIMIT), -MAX_V_BUS_LIMIT);
   motor->Vq = fmaxf(fminf(motor->Vq, MAX_V_BUS_LIMIT), -MAX_V_BUS_LIMIT);
@@ -124,5 +133,5 @@ float Normalize_Angle_0_to_2PI(float angle) {
   float angle_norm = fmodf(angle, 2.0f);
   if (angle_norm < 0.0f)
     angle_norm += 2.0f; // 归一化到 [0, 2.0)
-  return angle;
+  return angle_norm;
 }

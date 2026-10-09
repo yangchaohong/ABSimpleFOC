@@ -13,6 +13,29 @@ struct PID_Controller {
   float prev_error;
   float out_limit;      // 输出限幅
   float integral_limit; // 积分抗饱和限幅
+  float output_ramp;    // 输出变化率限制
+};
+
+// 运动控制类型 (对齐 SimpleFOC)
+typedef enum {
+  MOTION_TORQUE = 0,            // 力矩模式
+  MOTION_VELOCITY = 1,          // 速度闭环
+  MOTION_ANGLE = 2,             // 位置闭环
+  MOTION_VELOCITY_OPENLOOP = 3, // 速度开环
+  MOTION_ANGLE_OPENLOOP = 4     // 角度开环
+} MotionControlType;
+
+// 扭矩控制类型
+typedef enum {
+  TORQUE_VOLTAGE = 0,     // 电压等效模式
+  TORQUE_DC_CURRENT = 1,  // 直流电流模式
+  TORQUE_FOC_CURRENT = 2  // FOC 矢量电流闭环
+} TorqueControlType;
+
+// 一阶低通滤波器
+struct LowPassFilter {
+  float Tf;
+  float prev_out;
 };
 // 电机状态与参数
 struct FOC_Motor {
@@ -60,4 +83,7 @@ void FOC_Run(struct FOC_Motor *motor, struct PID_Controller *pid_id,
 void OPENLOOP_Run(struct FOC_Motor *motor, float Vd, float theta_virtual);
 
 float Normalize_Angle_0_to_2PI(float angle);
+
+void Commander_Run(char *cmd);
+
 #endif // FOC_H
